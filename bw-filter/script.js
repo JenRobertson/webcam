@@ -4,6 +4,7 @@ window.onload = function () {
     const canvas = document.querySelector('canvas');
     const box = document.querySelector('#box');
     const ctx = canvas.getContext('2d');
+    const slider = document.querySelector('#slider');
 
     navigator.mediaDevices.getUserMedia({audio: false, video: true})
         .then(function(stream) {
@@ -20,18 +21,27 @@ window.onload = function () {
     const interval = () => {
         ctx.filter = 'grayscale(100%)';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const avg = getAverageBrightnessOfArea(ctx, 0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.rect(0, 0, 100, 100);
-        ctx.stroke();
 
-        box.style.backgroundColor = `rgba(${avg},${avg},${avg}, 1)`;
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < pixels.data.length; i++) {
+            let element = pixels.data[i];
+            if (element < slider.value){
+                pixels.data[i] = 0;
+            } else {
+                pixels.data[i] = 255;
+            }
+        }
+
+        ctx.putImageData(pixels,0,0);
     }
 }
 
+function getPixelsFromArea(ctx, sx, sy, sw, sh){
+    return getEveryNth(ctx.getImageData(sx,sy,sw,sh).data); 
+}
+
 function getAverageBrightnessOfArea(ctx, sx, sy, sw, sh){
-    const arrayOfRs = getEveryNth(ctx.getImageData(sx,sy,sw,sh).data); 
-    return average(arrayOfRs);
+    return average(getPixelsFromArea(ctx, sx, sy, sw, sh));
 }
 
 function average(nums) {
